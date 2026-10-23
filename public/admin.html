@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Admin Thresholds & Health</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      GhostRead
+      <span class="badge" style="background: #fef3c7; color: #92400e;">Admin Portal</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/">My Library</a></li>
+      <li><a href="/dashboard.html">Dashboard</a></li>
+      <li><a href="/explain.html">Explain This App</a></li>
+      <li><a href="/admin.html" class="active">Admin Settings</a></li>
+    </ul>
+    <div class="nav-user">
+      <button class="btn btn-secondary btn-sm" onclick="API.logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width: 900px;">
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">
+        Classifier Thresholds & System Control
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Tune behavioral classification thresholds stored in <code>/config/thresholds.json</code> without restarting the server (REQ-3.4, REQ-5.4).
+      </p>
+    </div>
+
+    <div id="admin-alert" class="alert alert-success" style="display: none;"></div>
+
+    <!-- System Health Cards -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <h2 class="card-title" style="margin-bottom: 1rem;">System Telemetry Health</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem;">
+        <div style="padding: 1rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border);">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Registered Users</span>
+          <div id="health-users" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">--</div>
+        </div>
+        <div style="padding: 1rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border);">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Uploaded Docs</span>
+          <div id="health-docs" style="font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">--</div>
+        </div>
+        <div style="padding: 1rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border);">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Sessions</span>
+          <div id="health-sessions" style="font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">--</div>
+        </div>
+        <div style="padding: 1rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border);">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Reading Events</span>
+          <div id="health-events" style="font-size: 1.5rem; font-weight: 800; color: #10b981; margin-top: 0.25rem;">--</div>
+        </div>
+        <div style="padding: 1rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border);">
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Questions Bank</span>
+          <div id="health-questions" style="font-size: 1.5rem; font-weight: 800; color: #8b5cf6; margin-top: 0.25rem;">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thresholds Form (REQ-3.4, 5.4) -->
+    <div class="card">
+      <h2 class="card-title" style="margin-bottom: 1.25rem;">Classification Thresholds Tuning</h2>
+
+      <form id="thresholds-form" onsubmit="saveThresholds(event)">
+        <!-- Reading Speed -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">
+            1. Reading Rate Baseline (words / sec)
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            Baseline adult reading speed used to compute expected dwell time (words / wps). 3.5 words/sec is ~210 WPM.
+          </p>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <input type="number" step="0.1" id="th-wps" required class="btn-secondary" style="width: 140px; padding: 0.5rem 0.75rem; cursor: text;">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">words / second</span>
+          </div>
+        </div>
+
+        <!-- Dwell Time Fractions -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">
+            2. Minimum Dwell Time Fraction
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            If student spends less than this fraction of expected dwell time, section is flagged for potential skimming.
+          </p>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <input type="number" step="0.05" min="0.1" max="1.0" id="th-dwell-fraction" required class="btn-secondary" style="width: 140px; padding: 0.5rem 0.75rem; cursor: text;">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">ratio (e.g. 0.40 = 40% of expected reading time)</span>
+          </div>
+        </div>
+
+        <!-- Scroll Velocity -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">
+            3. Scroll Velocity Limits & Relative Ratio
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            Thresholds for flagging rapid scrolling past text sections.
+          </p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">Max Reading Scroll Pace (px/s)</label>
+              <input type="number" step="10" id="th-max-scroll" required class="btn-secondary" style="width: 100%; padding: 0.5rem 0.75rem; cursor: text;">
+            </div>
+            <div>
+              <label style="display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem;">Relative Speed Ratio Skim Threshold</label>
+              <input type="number" step="0.05" id="th-rel-speed" required class="btn-secondary" style="width: 100%; padding: 0.5rem 0.75rem; cursor: text;">
+            </div>
+          </div>
+        </div>
+
+        <!-- Reread Thresholds -->
+        <div style="margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+          <h3 style="font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.5rem;">
+            4. Reread Revisit Dwell (REQ-3.3)
+          </h3>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+            Minimum dwell time on second pass (revisit after reading forward) required to classify section as Reread.
+          </p>
+          <div style="display: flex; align-items: center; gap: 1rem;">
+            <input type="number" step="0.5" id="th-reread-dwell" required class="btn-secondary" style="width: 140px; padding: 0.5rem 0.75rem; cursor: text;">
+            <span style="font-size: 0.85rem; color: var(--text-muted);">seconds</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+          <button type="submit" id="save-btn" class="btn btn-primary" style="padding: 0.65rem 1.75rem;">
+            Save & Apply Configuration
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let fullConfig = null;
+
+    async function loadAdminData() {
+      try {
+        const user = await API.getCurrentUser();
+        if (!user || user.role !== 'admin') {
+          alert('Admin access required. Please sign in as an administrator.');
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const [healthRes, configRes] = await Promise.all([
+          API.get('/api/admin/health'),
+          API.get('/api/admin/thresholds')
+        ]);
+
+        // Display health stats
+        document.getElementById('health-users').textContent = healthRes.metrics.users;
+        document.getElementById('health-docs').textContent = healthRes.metrics.documents;
+        document.getElementById('health-sessions').textContent = healthRes.metrics.sessions;
+        document.getElementById('health-events').textContent = healthRes.metrics.readingEvents;
+        document.getElementById('health-questions').textContent = healthRes.metrics.questionsGenerated;
+
+        // Populate thresholds form
+        fullConfig = configRes.config;
+        document.getElementById('th-wps').value = fullConfig.reading_speed.words_per_second;
+        document.getElementById('th-dwell-fraction').value = fullConfig.dwell_time.min_dwell_fraction;
+        document.getElementById('th-max-scroll').value = fullConfig.scroll_speed.max_reading_speed_px_sec;
+        document.getElementById('th-rel-speed').value = fullConfig.scroll_speed.relative_speed_skim_threshold;
+        document.getElementById('th-reread-dwell').value = fullConfig.reread.min_backtrack_dwell_seconds;
+
+      } catch (err) {
+        console.error('Failed to load admin:', err);
+        alert('Failed to load admin settings: ' + err.message);
+      }
+    }
+
+    async function saveThresholds(e) {
+      e.preventDefault();
+      const saveBtn = document.getElementById('save-btn');
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+
+      fullConfig.reading_speed.words_per_second = parseFloat(document.getElementById('th-wps').value);
+      fullConfig.dwell_time.min_dwell_fraction = parseFloat(document.getElementById('th-dwell-fraction').value);
+      fullConfig.scroll_speed.max_reading_speed_px_sec = parseFloat(document.getElementById('th-max-scroll').value);
+      fullConfig.scroll_speed.relative_speed_skim_threshold = parseFloat(document.getElementById('th-rel-speed').value);
+      fullConfig.reread.min_backtrack_dwell_seconds = parseFloat(document.getElementById('th-reread-dwell').value);
+
+      try {
+        await API.put('/api/admin/thresholds', { config: fullConfig });
+        const alertEl = document.getElementById('admin-alert');
+        alertEl.textContent = 'Configuration updated successfully in /config/thresholds.json! Subsequent reading sessions will use these thresholds immediately.';
+        alertEl.style.display = 'block';
+        setTimeout(() => alertEl.style.display = 'none', 4000);
+      } catch (err) {
+        alert('Failed to save thresholds: ' + err.message);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save & Apply Configuration';
+      }
+    }
+
+    loadAdminData();
+  </script>
+</body>
+</html>

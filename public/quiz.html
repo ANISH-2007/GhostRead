@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Targeted Micro-Quiz</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      GhostRead
+      <span class="badge" style="background: #fef2f2; color: #991b1b;">Targeted Re-assessment</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/">My Library</a></li>
+      <li><a href="/dashboard.html">Dashboard</a></li>
+      <li><a href="/explain.html">Explain This App</a></li>
+    </ul>
+    <div class="nav-user">
+      <button class="btn btn-secondary btn-sm" onclick="API.logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width: 760px;">
+    <!-- Loading Screen -->
+    <div id="quiz-loading" style="text-align: center; padding: 4rem 1rem;">
+      <h2 style="font-size: 1.3rem; font-weight: 700; color: #0f172a;">Building Targeted Micro-Quiz...</h2>
+      <p style="color: var(--text-muted); margin-top: 0.5rem;">Generating questions from skimmed section texts (< 5s requirement)</p>
+    </div>
+
+    <!-- Active Quiz View -->
+    <div id="quiz-container" style="display: none;">
+      <div style="margin-bottom: 2rem;">
+        <span style="font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: #ef4444; letter-spacing: 0.05em;">
+          Targeted Knowledge Verification (REQ-4.1, 4.3)
+        </span>
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">
+          Comprehension Check
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem;">
+          These questions test only the sections flagged as <strong>Skimmed</strong> during your reading session.
+          Answering correctly will upgrade each section from <em>Skimmed</em> to <strong>Reinforced</strong> (REQ-4.4).
+        </p>
+      </div>
+
+      <form id="quiz-form" onsubmit="submitQuiz(event)">
+        <div id="questions-list">
+          <!-- Filled dynamically -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+          <button type="submit" id="submit-quiz-btn" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem;">
+            Submit Answers & Grade
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Quiz Results View (Immediate Feedback) -->
+    <div id="results-container" style="display: none;">
+      <div class="card" style="box-shadow: var(--shadow-md); text-align: center; padding: 2.5rem 1.5rem; margin-bottom: 2rem;">
+        <div id="score-circle" style="width: 90px; height: 90px; border-radius: 50%; background: var(--primary-light); color: var(--primary); font-size: 2rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+          100%
+        </div>
+        <h2 id="results-headline" style="font-size: 1.5rem; font-weight: 800; color: #0f172a;">
+          Quiz Complete!
+        </h2>
+        <p id="results-subtext" style="color: var(--text-muted); font-size: 1rem; margin-top: 0.25rem;">
+          You answered 2 of 2 questions correctly.
+        </p>
+
+        <!-- Upgraded sections alert -->
+        <div id="upgrade-alert" class="alert alert-success" style="margin-top: 1.5rem; display: none; text-align: left;">
+          <div>
+            <strong>Comprehension Upgraded!</strong>
+            <div id="upgrade-list" style="margin-top: 0.25rem; font-size: 0.9rem;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graded Breakdown -->
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom: 1rem;">Question Review & Explanations</h3>
+        <div id="graded-questions-list" style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Graded items -->
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <a href="/" class="btn btn-secondary" style="flex: 1;">Back to Library</a>
+        <a href="/dashboard.html" class="btn btn-primary" style="flex: 1;">View Comprehension Dashboard &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+
+    if (!sessionId) {
+      window.location.href = '/';
+    }
+
+    let quizData = null;
+
+    async function loadQuiz() {
+      try {
+        const user = await API.getCurrentUser();
+        if (!user) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        const data = await API.get(`/api/sessions/${sessionId}/quiz`);
+        quizData = data;
+
+        document.getElementById('quiz-loading').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'block';
+
+        renderQuestions(data.questions);
+      } catch (err) {
+        console.error('Failed to load quiz:', err);
+        alert(err.message);
+        window.location.href = `/summary.html?session=${sessionId}`;
+      }
+    }
+
+    function renderQuestions(questions) {
+      const container = document.getElementById('questions-list');
+      container.innerHTML = questions.map((q, idx) => `
+        <div class="question-card" id="q-card-${q.id}">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: #ef4444; background: #fef2f2; padding: 0.2rem 0.6rem; border-radius: 4px;">
+              Section ${q.section_number} (Page ${q.page_number})
+            </span>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Question ${idx + 1} of ${questions.length}</span>
+          </div>
+
+          <div class="question-text">${escapeHtml(q.question_text)}</div>
+
+          <div class="options-list">
+            ${q.options.map((opt, oIdx) => `
+              <label class="option-item" id="opt-label-${q.id}-${oIdx}">
+                <input type="radio" name="question_${q.id}" value="${escapeHtml(opt)}" required style="accent-color: var(--primary);" onchange="selectOption(${q.id}, ${oIdx})">
+                <span>${escapeHtml(opt)}</span>
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function selectOption(qId, oIdx) {
+      const card = document.getElementById(`q-card-${qId}`);
+      const labels = card.querySelectorAll('.option-item');
+      labels.forEach(l => l.classList.remove('selected'));
+      document.getElementById(`opt-label-${qId}-${oIdx}`).classList.add('selected');
+    }
+
+    async function submitQuiz(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submit-quiz-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Grading...';
+
+      const responses = [];
+      for (const q of quizData.questions) {
+        const selected = document.querySelector(`input[name="question_${q.id}"]:checked`);
+        responses.push({
+          questionId: q.id,
+          answer: selected ? selected.value : ''
+        });
+      }
+
+      try {
+        const result = await API.post(`/api/sessions/${sessionId}/quiz/submit`, { responses });
+        showResults(result);
+      } catch (err) {
+        alert('Error submitting quiz: ' + err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Answers & Grade';
+      }
+    }
+
+    function showResults(result) {
+      document.getElementById('quiz-container').style.display = 'none';
+      document.getElementById('results-container').style.display = 'block';
+
+      // Score circle
+      const scoreCircle = document.getElementById('score-circle');
+      scoreCircle.textContent = `${result.percentage}%`;
+      if (result.percentage >= 70) {
+        scoreCircle.style.background = 'var(--status-read-bg)';
+        scoreCircle.style.color = 'var(--status-read)';
+      } else {
+        scoreCircle.style.background = '#fef2f2';
+        scoreCircle.style.color = '#ef4444';
+      }
+
+      document.getElementById('results-subtext').textContent =
+        `You answered ${result.score} of ${result.totalQuestions} questions correctly.`;
+
+      // Upgrades notification (REQ-4.4)
+      if (result.upgradedSections && result.upgradedSections.length > 0) {
+        const alertEl = document.getElementById('upgrade-alert');
+        const listEl = document.getElementById('upgrade-list');
+        alertEl.style.display = 'flex';
+        listEl.innerHTML = `Successfully verified comprehension! Upgraded ${result.upgradedSections.length} section(s) from <strong>Skimmed</strong> to <span style="color: #0891b2; font-weight: 700;">Reinforced</span> on your dashboard.`;
+      }
+
+      // Review each question
+      const reviewContainer = document.getElementById('graded-questions-list');
+      reviewContainer.innerHTML = result.gradedItems.map((item, idx) => `
+        <div style="padding: 1rem; border: 1px solid ${item.isCorrect ? '#bbf7d0' : '#fecaca'}; background: ${item.isCorrect ? '#f0fdf4' : '#fef2f2'}; border-radius: 6px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+            <span style="font-weight: 700; font-size: 0.85rem; color: ${item.isCorrect ? '#166534' : '#991b1b'};">
+              ${item.isCorrect ? '✓ Correct' : '✗ Incorrect'}
+            </span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; color: #0f172a;">
+            ${escapeHtml(item.questionText)}
+          </div>
+          <div style="font-size: 0.85rem; color: #475569;">
+            Your answer: <span style="font-weight: 600;">${escapeHtml(item.userAnswer || 'No answer')}</span>
+            ${!item.isCorrect ? `<br>Correct answer: <span style="font-weight: 600; color: #166534;">${escapeHtml(item.correctAnswer)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
+    loadQuiz();
+  </script>
+</body>
+</html>

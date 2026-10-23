@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Login / Register</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background: #f1f5f9; justify-content: center; align-items: center;">
+  <div style="width: 100%; max-width: 440px; padding: 1.5rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1.75rem; font-weight: 800; color: #0f172a;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+        </svg>
+        GhostRead
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+        Behavioral Reading-Comprehension Verifier
+      </p>
+    </div>
+
+    <div class="card" style="box-shadow: var(--shadow-lg);">
+      <div style="display: flex; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
+        <button id="tab-login" class="btn" style="flex: 1; border-radius: 0; border: none; border-bottom: 2px solid var(--primary); color: var(--primary); background: transparent;" onclick="showTab('login')">Log In</button>
+        <button id="tab-register" class="btn" style="flex: 1; border-radius: 0; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); background: transparent;" onclick="showTab('register')">Register</button>
+      </div>
+
+      <div id="auth-alert" class="alert alert-error" style="display: none;"></div>
+
+      <!-- Login Form -->
+      <form id="form-login" onsubmit="handleLogin(event)">
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Email Address</label>
+          <input type="email" id="login-email" required class="btn-secondary" style="width: 100%; padding: 0.65rem 0.85rem; text-align: left; cursor: text;" placeholder="student@example.com">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Password</label>
+          <input type="password" id="login-password" required class="btn-secondary" style="width: 100%; padding: 0.65rem 0.85rem; text-align: left; cursor: text;" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">Sign In</button>
+
+        <div style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: 0.5rem;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('demo@ghostread.app', 'demo1234')">
+            Quick Fill Demo Student
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="fillDemo('admin@ghostread.app', 'admin1234')">
+            Quick Fill Demo Admin
+          </button>
+        </div>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-register" style="display: none;" onsubmit="handleRegister(event)">
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Full Name</label>
+          <input type="text" id="reg-name" required class="btn-secondary" style="width: 100%; padding: 0.65rem 0.85rem; text-align: left; cursor: text;" placeholder="Alex Student">
+        </div>
+        <div style="margin-bottom: 1.25rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Email Address</label>
+          <input type="email" id="reg-email" required class="btn-secondary" style="width: 100%; padding: 0.65rem 0.85rem; text-align: left; cursor: text;" placeholder="alex@vitstudent.ac.in">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.4rem;">Password (min 6 chars)</label>
+          <input type="password" id="reg-password" minlength="6" required class="btn-secondary" style="width: 100%; padding: 0.65rem 0.85rem; text-align: left; cursor: text;" placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.75rem;">Create Student Account</button>
+      </form>
+    </div>
+
+    <div style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+      <a href="/explain.html" style="color: var(--text-muted); text-decoration: underline;">Learn how GhostRead works</a>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    function showTab(tab) {
+      const loginForm = document.getElementById('form-login');
+      const regForm = document.getElementById('form-register');
+      const tabLogin = document.getElementById('tab-login');
+      const tabReg = document.getElementById('tab-register');
+      const alert = document.getElementById('auth-alert');
+      alert.style.display = 'none';
+
+      if (tab === 'login') {
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+        tabLogin.style.borderColor = 'var(--primary)';
+        tabLogin.style.color = 'var(--primary)';
+        tabReg.style.borderColor = 'transparent';
+        tabReg.style.color = 'var(--text-muted)';
+      } else {
+        loginForm.style.display = 'none';
+        regForm.style.display = 'block';
+        tabReg.style.borderColor = 'var(--primary)';
+        tabReg.style.color = 'var(--primary)';
+        tabLogin.style.borderColor = 'transparent';
+        tabLogin.style.color = 'var(--text-muted)';
+      }
+    }
+
+    function fillDemo(email, pass) {
+      document.getElementById('login-email').value = email;
+      document.getElementById('login-password').value = pass;
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const alert = document.getElementById('auth-alert');
+      alert.style.display = 'none';
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+
+      try {
+        const data = await API.post('/api/auth/login', { email, password });
+        API.setToken(data.token);
+        if (data.user.role === 'admin') {
+          window.location.href = '/admin.html';
+        } else {
+          window.location.href = '/';
+        }
+      } catch (err) {
+        alert.textContent = err.message;
+        alert.style.display = 'block';
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const alert = document.getElementById('auth-alert');
+      alert.style.display = 'none';
+      const name = document.getElementById('reg-name').value;
+      const email = document.getElementById('reg-email').value;
+      const password = document.getElementById('reg-password').value;
+
+      try {
+        const data = await API.post('/api/auth/register', { name, email, password });
+        API.setToken(data.token);
+        window.location.href = '/';
+      } catch (err) {
+        alert.textContent = err.message;
+        alert.style.display = 'block';
+      }
+    }
+
+    // Auto-redirect if already logged in
+    API.getCurrentUser().then(user => {
+      if (user) {
+        window.location.href = user.role === 'admin' ? '/admin.html' : '/';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "name": "ghostread",
+  "version": "1.0.0",
+  "description": "A behavioral reading-comprehension verifier with targeted re-assessment",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "demo": "node scripts/generate-demo-data.js",
+    "test": "node --test tests/**/*.test.js"
+  },
+  "keywords": [
+    "reading-comprehension",
+    "behavioral-telemetry",
+    "pdf-reader",
+    "micro-quiz"
+  ],
+  "author": "Anish Ranjan",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.8.1",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.16.0"
+  }
+}

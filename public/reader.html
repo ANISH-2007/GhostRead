@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Reading View</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Mozilla PDF.js (Local copy + CDN fallback) -->
+  <script src="/vendor/pdfjs/pdf.min.js"></script>
+  <script>
+    if (!window.pdfjsLib) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body class="reader-body">
+  <!-- Reading View Header Toolbar -->
+  <header class="reader-toolbar">
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <a href="/" class="btn btn-secondary btn-sm" title="Back to Library">
+        &larr; Exit
+      </a>
+      <div>
+        <h2 id="doc-title" style="font-size: 1rem; font-weight: 700; color: #0f172a; max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          Loading document...
+        </h2>
+        <span id="page-indicator" style="font-size: 0.75rem; color: var(--text-muted);">
+          Page 1 of ...
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <!-- Demo Mode Toggle (SRS Teacher Demo Requirement) -->
+      <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: #f1f5f9; padding: 0.35rem 0.75rem; border-radius: 999px; border: 1px solid var(--border);">
+        <input type="checkbox" id="demo-mode-toggle" style="accent-color: #2563eb; cursor: pointer;" onchange="toggleDemoMode(this.checked)">
+        <span>Demo Mode HUD</span>
+        <span style="font-size: 0.65rem; background: #e2e8f0; color: #334155; padding: 1px 5px; border-radius: 4px;">LIVE</span>
+      </label>
+
+      <!-- Walkthrough Guide Button -->
+      <button class="btn btn-secondary btn-sm" onclick="showWalkthroughModal()" title="How GhostRead Works">
+        ❓ Guide
+      </button>
+
+      <!-- Finish Reading Button (Saves session and runs classifier) -->
+      <button id="finish-btn" class="btn btn-primary btn-sm" onclick="finishReadingSession()">
+        ✓ Finish Reading
+      </button>
+    </div>
+  </header>
+
+  <!-- PDF Viewport with Continuous Vertical Scroll -->
+  <main id="pdf-viewport" class="pdf-viewport" tabindex="0">
+    <div id="pdf-loading-spinner" style="color: #ffffff; text-align: center; margin-top: 3rem;">
+      <div style="font-size: 1.2rem; font-weight: 600;">Rendering Document with PDF.js...</div>
+      <div style="font-size: 0.85rem; opacity: 0.8; margin-top: 0.5rem;">Preparing sections for silent telemetry tracking</div>
+    </div>
+  </main>
+
+  <!-- Live Demo HUD (Visible only when Demo Mode is toggled ON) -->
+  <div id="demo-hud" class="demo-hud" style="display: none;">
+    <div class="demo-hud-header">
+      <div class="hud-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+        </svg>
+        Telemetry HUD
+      </div>
+      <span style="font-size: 0.7rem; color: #38bdf8;">SRS REQ-2.1..2.3</span>
+    </div>
+
+    <div class="hud-row">
+      <span class="hud-label">Active Section:</span>
+      <span id="hud-section" class="hud-value">Section 1 (Page 1)</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">Section Word Count:</span>
+      <span id="hud-words" class="hud-value">-- words</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">Active Dwell Time:</span>
+      <span id="hud-dwell" class="hud-value">0.0s</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">Expected Min Dwell:</span>
+      <span id="hud-exp-dwell" class="hud-value">0.0s</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">Scroll Speed:</span>
+      <span id="hud-scroll-speed" class="hud-value">0 px/s</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">Relative Speed:</span>
+      <span id="hud-rel-speed" class="hud-value">0.00x</span>
+    </div>
+    <div class="hud-row">
+      <span class="hud-label">Backtracks Count:</span>
+      <span id="hud-backtracks" class="hud-value">0</span>
+    </div>
+
+    <!-- Live Classifier State Prediction -->
+    <div id="hud-prediction" class="hud-prediction Genuinely-Read">
+      Genuinely Reading
+    </div>
+  </div>
+
+  <!-- First-Time Walkthrough Modal (SRS 2.6) -->
+  <div id="walkthrough-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem;">
+        <div style="background: var(--primary-light); color: var(--primary); padding: 0.5rem; border-radius: 8px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">How GhostRead Works</h3>
+      </div>
+
+      <p style="color: #334155; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1rem;">
+        Welcome to GhostRead! Unlike ordinary PDF readers, GhostRead quietly verifies your reading absorption:
+      </p>
+
+      <ul style="color: #475569; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; padding-left: 1.25rem;">
+        <li style="margin-bottom: 0.5rem;">
+          <strong>Dwell Time:</strong> Measures how long you spend on each section relative to its word count.
+        </li>
+        <li style="margin-bottom: 0.5rem;">
+          <strong>Scroll Speed:</strong> Calculates your scroll velocity relative to page text density.
+        </li>
+        <li style="margin-bottom: 0.5rem;">
+          <strong>Targeted Re-assessment:</strong> If you skim past a section, a brief micro-quiz will focus only on that section so you can reinforce your understanding.
+        </li>
+      </ul>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem; font-size: 0.85rem; color: #64748b; margin-bottom: 1.5rem;">
+        💡 <strong>Teacher / Demo Tip:</strong> Toggle <em>Demo Mode HUD</em> in the top toolbar to see the live classification updates in real time as you scroll!
+      </div>
+
+      <button class="btn btn-primary" style="width: 100%;" onclick="closeWalkthroughModal()">
+        Got it, Start Reading
+      </button>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/tracker.js"></script>
+</body>
+</html>

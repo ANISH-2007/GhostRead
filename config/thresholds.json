@@ -1,0 +1,28 @@
+{
+  "reading_speed": {
+    "words_per_second": 3.5,
+    "description": "Standard adult academic reading speed baseline (~210 words per minute)."
+  },
+  "dwell_time": {
+    "min_dwell_fraction": 0.40,
+    "description": "Fraction of expected dwell time (words / words_per_second) below which a section is flagged as skimmed if scroll speed is also elevated.",
+    "min_absolute_dwell_seconds": 2.0,
+    "description_absolute": "Absolute minimum seconds spent on any section with more than 20 words."
+  },
+  "scroll_speed": {
+    "max_reading_speed_px_sec": 350.0,
+    "description": "Max continuous scroll speed in px/s before scroll pattern is flagged as rapid scrolling.",
+    "relative_speed_skim_threshold": 1.25,
+    "description_relative": "Ratio of scroll speed relative to text density (px/sec / (words / section_height_px)) that triggers Skimmed classification."
+  },
+  "reread": {
+    "min_backtrack_dwell_seconds": 4.0,
+    "min_passes": 2,
+    "description": "Revisiting a section after reading subsequent sections, with dwell time >= 4.0 seconds on the second pass, classifies it as Reread."
+  },
+  "edge_cases": {
+    "min_words_for_text_page": 25,
+    "image_or_diagram_dwell_min_seconds": 3.0,
+    "description": "Pages with fewer than 25 words (diagrams, title pages) require at least 3 seconds of dwell to be considered Genuinely Read."
+  }
+}

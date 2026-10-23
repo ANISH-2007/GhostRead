@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Software Engineering Process Model Analysis</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .comp-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+    .comp-table th, .comp-table td {
+      border: 1px solid var(--border);
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+    .comp-table th {
+      background: #f8fafc;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .comp-table tr.highlight {
+      background: #eff6ff;
+      font-weight: 600;
+    }
+    .flow-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 1.25rem;
+      padding: 1.25rem;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+    }
+    .step-number {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #ffffff;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      GhostRead
+      <span class="badge">Architecture</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/">My Library</a></li>
+      <li><a href="/dashboard.html">Dashboard</a></li>
+      <li><a href="/explain.html" class="active">Explain This App</a></li>
+    </ul>
+    <div class="nav-user">
+      <a href="/" class="btn btn-secondary btn-sm">&larr; Back to App</a>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width: 860px;">
+    <!-- Title -->
+    <div style="margin-bottom: 2.5rem;">
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em;">
+        VIT University &bull; Software Engineering Lab &bull; Experiment 1
+      </span>
+      <h1 style="font-size: 2.2rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; line-height: 1.2;">
+        Software Process Model Analysis & Architecture
+      </h1>
+      <p style="color: var(--text-muted); font-size: 1rem; margin-top: 0.5rem;">
+        An explanation of why the <strong>Incremental Model</strong> was chosen for GhostRead, and how each development increment maps directly to working software.
+      </p>
+    </div>
+
+    <!-- Section A.1: The Problem -->
+    <div class="card">
+      <h2 class="card-title">A.1 The Access vs. Comprehension Gap</h2>
+      <p style="color: #334155; margin-bottom: 0.75rem; line-height: 1.6;">
+        Traditional learning management platforms (such as Moodle, Canvas, and Google Classroom) only record whether a student has <em>accessed</em> a PDF file. Opening a document checks off a requirement, regardless of whether the student actually absorbed the material or scrolled through the entire chapter in 30 seconds.
+      </p>
+      <p style="color: #334155; line-height: 1.6;">
+        GhostRead solves this discrepancy by using <strong>silent reading-behaviour telemetry</strong> — measuring dwell time per section, scroll velocity relative to page text density, and backtracking patterns — to distinguish genuine reading from superficial skimming, and closing the learning loop with targeted micro-assessments on skimmed material.
+      </p>
+    </div>
+
+    <!-- Section A.4: Comparative Analysis Table -->
+    <div class="card">
+      <h2 class="card-title">A.4 Comparative Process Model Analysis</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+        Evaluation of standard SDLC process models against GhostRead project constraints (per SRS Table A.4):
+      </p>
+
+      <div style="overflow-x: auto;">
+        <table class="comp-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Waterfall</th>
+              <th>Spiral</th>
+              <th>Agile</th>
+              <th>Prototype</th>
+              <th style="background: #dbeafe; color: #1e40af;">Incremental (Selected)</th>
+              <th>V-Model</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Requirement clarity upfront</strong></td>
+              <td>High</td>
+              <td>Medium</td>
+              <td>Low</td>
+              <td>Low</td>
+              <td style="background: #eff6ff;">Medium</td>
+              <td>High</td>
+            </tr>
+            <tr>
+              <td><strong>Handles changing requirements</strong></td>
+              <td>Poor</td>
+              <td>Good</td>
+              <td>Excellent</td>
+              <td>Good</td>
+              <td style="background: #eff6ff;">Good</td>
+              <td>Poor</td>
+            </tr>
+            <tr>
+              <td><strong>Customer feedback involved</strong></td>
+              <td>Low</td>
+              <td>Medium</td>
+              <td>High</td>
+              <td>High</td>
+              <td style="background: #eff6ff;">Medium</td>
+              <td>Low</td>
+            </tr>
+            <tr>
+              <td><strong>Risk management focus</strong></td>
+              <td>Low</td>
+              <td>High</td>
+              <td>Medium</td>
+              <td>Medium</td>
+              <td style="background: #eff6ff;">Medium</td>
+              <td>Medium</td>
+            </tr>
+            <tr>
+              <td><strong>Suitable for small solo projects</strong></td>
+              <td>Yes</td>
+              <td>No</td>
+              <td>Yes</td>
+              <td>Yes</td>
+              <td style="background: #eff6ff;">Yes</td>
+              <td>No</td>
+            </tr>
+            <tr>
+              <td><strong>Delivers working software early</strong></td>
+              <td>No</td>
+              <td>No</td>
+              <td>Yes</td>
+              <td>Partial</td>
+              <td style="background: #eff6ff;"><strong>Yes</strong></td>
+              <td>No</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Section A.5: Justification -->
+    <div class="card">
+      <h2 class="card-title">A.5 Selected Process Model Justification</h2>
+      <p style="color: #334155; margin-bottom: 1rem; line-height: 1.6;">
+        The <strong>Incremental Model</strong> was chosen for the following core technical reasons:
+      </p>
+      <ul style="color: #334155; padding-left: 1.5rem; line-height: 1.7; margin-bottom: 1rem;">
+        <li>
+          <strong>De-risking the Core Novelty:</strong> The comprehension classifier is the riskiest, most novel feature. Developing the reader and event logger first (Increment 1) provides a stable platform and real telemetry data with which to test and tune the classifier in Increment 2.
+        </li>
+        <li>
+          <strong>Strict Architectural Dependency:</strong> The Targeted Micro-Quiz generator (Increment 3) logically requires the classifier's output to know which sections were skimmed. Quizzes cannot be tested without working classifications.
+        </li>
+        <li>
+          <strong>Working Demos at Every Checkpoint:</strong> Each increment delivers a fully functional, demo-ready layer that can be demonstrated to an instructor without waiting for the final release.
+        </li>
+      </ul>
+
+      <div style="background: #f8fafc; border-left: 4px solid #64748b; padding: 1rem; border-radius: 4px; font-size: 0.85rem; color: #475569;">
+        <strong>Why other models were ruled out:</strong>
+        <br>&bull; <em>Waterfall & V-Model:</em> Too rigid; classifier thresholds cannot be perfected upfront without observing actual reading data.
+        <br>&bull; <em>Pure Agile:</em> Requires continuous customer collaboration and sprint ceremonies that do not apply to a solo student project.
+        <br>&bull; <em>Spiral:</em> Excessively heavyweight formal risk evaluation overhead designed for multi-million-dollar defense or aerospace systems.
+      </div>
+    </div>
+
+    <!-- Section A.6: Four Increments Breakdown -->
+    <div class="card">
+      <h2 class="card-title">A.6 Incremental Build Breakdown</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+        How each increment was designed, implemented, and verified in this application:
+      </p>
+
+      <div class="flow-step">
+        <div class="step-number">1</div>
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+            Increment 1: Upload + Section Split + Scroll Tracking
+          </h3>
+          <p style="color: #475569; font-size: 0.9rem; margin-top: 0.25rem;">
+            Delivers document ingestion (20MB PDF validation, error handling) and page-based section text extraction with word counting. Features a continuous PDF.js viewer with silent viewport dwell and scroll velocity tracking batched every 3 seconds and sent via <code>navigator.sendBeacon</code>.
+          </p>
+          <span style="display: inline-block; font-size: 0.75rem; background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+            Traceability: REQ-1.1, REQ-1.2, REQ-1.3, REQ-1.4, REQ-2.1, REQ-2.2, REQ-2.3, REQ-2.4
+          </span>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="step-number">2</div>
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+            Increment 2: Comprehension Signal Classifier
+          </h3>
+          <p style="color: #475569; font-size: 0.9rem; margin-top: 0.25rem;">
+            The core novelty. Runs in under 3 seconds upon session end. Evaluates section dwell against expected reading minimums (<code>words / 3.5 wps * 0.40</code>), relative scroll speed, and backtracking to classify sections as <em>Skimmed</em>, <em>Genuinely Read</em>, or <em>Reread</em>. Stores transparent explanations for every decision.
+          </p>
+          <span style="display: inline-block; font-size: 0.75rem; background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+            Traceability: REQ-3.1, REQ-3.2, REQ-3.3, REQ-3.4
+          </span>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="step-number">3</div>
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+            Increment 3: Targeted Micro-Quiz Generator
+          </h3>
+          <p style="color: #475569; font-size: 0.9rem; margin-top: 0.25rem;">
+            Selects ONLY sections marked Skimmed. Skips quiz if 0 sections were skimmed. Generates offline cloze and MCQ questions with in-document distractors in under 5 seconds. Upgrades correctly answered sections from <em>Skimmed</em> to <em>Reinforced</em>.
+          </p>
+          <span style="display: inline-block; font-size: 0.75rem; background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+            Traceability: REQ-4.1, REQ-4.2, REQ-4.3, REQ-4.4
+          </span>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="step-number">4</div>
+        <div>
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: #0f172a;">
+            Increment 4: Comprehension Dashboard + Polish
+          </h3>
+          <p style="color: #475569; font-size: 0.9rem; margin-top: 0.25rem;">
+            Provides per-document color-coded heatmaps (Skimmed, Genuinely Read, Reread, Reinforced) with an interactive inspection modal explaining why each label was chosen. Includes a Chart.js historical trend view across reading sessions, loading in under 2 seconds.
+          </p>
+          <span style="display: inline-block; font-size: 0.75rem; background: #e0e7ff; color: #3730a3; padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.5rem;">
+            Traceability: REQ-5.1, REQ-5.2, REQ-5.3
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mathematical Telemetry Foundation -->
+    <div class="card">
+      <h2 class="card-title">Behavioral Telemetry Formulation</h2>
+      <p style="color: #334155; line-height: 1.6; margin-bottom: 1rem;">
+        GhostRead operationalizes reading comprehension through three measurable behavioral dimensions:
+      </p>
+
+      <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem; font-family: ui-monospace, Menlo, Monaco, monospace; font-size: 0.85rem; line-height: 1.8; color: #1e293b;">
+        <strong>1. Expected Dwell Time ($T_{exp}$):</strong><br>
+        &nbsp;&nbsp;T_{exp} = W_s / V_{read_base} &nbsp;(where V_{read_base} = 3.5 words/sec ~ 210 WPM)<br>
+        &nbsp;&nbsp;T_{min} = max(2.0s, T_{exp} * 0.40)<br><br>
+        <strong>2. Relative Scroll Speed Ratio ($R_v$):</strong><br>
+        &nbsp;&nbsp;V_{scroll} = &Delta;Y / &Delta;t &nbsp;(pixels per second)<br>
+        &nbsp;&nbsp;D_{text} = W_s / H_{page} &nbsp;(words per pixel)<br>
+        &nbsp;&nbsp;R_v = V_{scroll} / (H_{page} / T_{exp})<br><br>
+        <strong>3. Classification Heuristic:</strong><br>
+        &nbsp;&nbsp;If (Pass > 1 and Dwell_{pass2} >= 4.0s) &rarr; <span style="color: #8b5cf6; font-weight: bold;">Reread</span><br>
+        &nbsp;&nbsp;Else If (R_v >= 1.25 and Dwell < T_{min}) &rarr; <span style="color: #ef4444; font-weight: bold;">Skimmed</span><br>
+        &nbsp;&nbsp;Else If (Dwell >= T_{min}) &rarr; <span style="color: #10b981; font-weight: bold;">Genuinely Read</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Academic Reading & Comprehension</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      GhostRead
+      <span class="badge">v1.0</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="/" class="active">My Library</a></li>
+      <li><a href="/dashboard.html">Comprehension Dashboard</a></li>
+      <li><a href="/explain.html">Explain This App</a></li>
+      <li id="admin-nav" style="display: none;"><a href="/admin.html">Admin Settings</a></li>
+    </ul>
+
+    <div class="nav-user">
+      <div id="user-display" class="user-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span id="user-name">Loading...</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="API.logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Header banner -->
+    <div style="margin-bottom: 2rem;">
+      <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">
+        Document Library & Reading Space
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Upload PDFs, read comfortably inside the viewer, and let GhostRead verify your genuine reading comprehension.
+      </p>
+    </div>
+
+    <!-- Alert Box -->
+    <div id="page-alert" class="alert alert-error" style="display: none;"></div>
+
+    <!-- Upload Card (REQ-1.1, REQ-1.3) -->
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title">Upload New Document</h2>
+        <span style="font-size: 0.85rem; color: var(--text-muted);">PDF only &bull; Max 20 MB</span>
+      </div>
+
+      <div id="dropzone" class="dropzone" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" accept="application/pdf,.pdf" style="display: none;" onchange="handleFileSelect(event)">
+        <div class="dropzone-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h3 id="dropzone-label">Drop your course PDF here or click to browse</h3>
+        <p>Supports lecture notes, research papers, and textbook chapters</p>
+
+        <!-- Progress Indicator -->
+        <div id="upload-progress-container" class="progress-container">
+          <div id="upload-progress-bar" class="progress-bar"></div>
+        </div>
+        <p id="upload-status" style="font-size: 0.85rem; color: var(--primary); margin-top: 0.5rem; display: none; font-weight: 600;"></p>
+      </div>
+    </div>
+
+    <!-- Documents Grid -->
+    <div>
+      <div class="card-header" style="margin-bottom: 1rem;">
+        <h2 class="card-title">Your Documents</h2>
+        <a href="/dashboard.html" class="btn btn-secondary btn-sm">View Analytics Dashboard &rarr;</a>
+      </div>
+
+      <div id="doc-list" class="doc-grid">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted);">
+          Loading your document library...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let currentUser = null;
+
+    async function init() {
+      try {
+        currentUser = await API.getCurrentUser();
+        if (!currentUser) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        document.getElementById('user-name').textContent = currentUser.name;
+        if (currentUser.role === 'admin') {
+          document.getElementById('admin-nav').style.display = 'block';
+        }
+
+        await loadDocuments();
+        setupDragDrop();
+      } catch (err) {
+        console.error('Init error:', err);
+      }
+    }
+
+    async function loadDocuments() {
+      try {
+        const data = await API.get('/api/documents');
+        const listEl = document.getElementById('doc-list');
+
+        if (!data.documents || data.documents.length === 0) {
+          listEl.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: #ffffff; border: 1px dashed var(--border); border-radius: var(--radius); color: var(--text-muted);">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" style="margin-bottom: 0.5rem;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              </svg>
+              <h3 style="font-size: 1.1rem; color: var(--text-main); margin-bottom: 0.25rem;">No documents uploaded yet</h3>
+              <p>Upload a PDF above to begin reading and tracking comprehension.</p>
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = data.documents.map(doc => `
+          <div class="doc-card">
+            <div>
+              <div style="display: flex; align-items: start; justify-content: space-between; gap: 0.5rem;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: #0f172a; line-height: 1.3;">
+                  ${escapeHtml(doc.title)}
+                </h3>
+              </div>
+              <div class="doc-meta">
+                <span>📄 ${doc.total_pages} page${doc.total_pages > 1 ? 's' : ''}</span>
+                <span>🏷️ ${doc.section_count || doc.total_pages} sections</span>
+                <span>⏱️ ${doc.session_count || 0} reading${doc.session_count === 1 ? '' : 's'}</span>
+              </div>
+            </div>
+
+            <div class="doc-actions">
+              <a href="/reader.html?doc=${doc.id}" class="btn btn-primary btn-sm" style="flex: 1;">
+                📖 Start Reading
+              </a>
+              <a href="/dashboard.html?doc=${doc.id}" class="btn btn-secondary btn-sm" title="View Heatmap">
+                📊 Heatmap
+              </a>
+              <button class="btn btn-secondary btn-sm" style="color: #ef4444;" onclick="deleteDoc(${doc.id}, '${escapeHtml(doc.title)}')">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } catch (err) {
+        showError('Failed to load documents: ' + err.message);
+      }
+    }
+
+    function setupDragDrop() {
+      const dropzone = document.getElementById('dropzone');
+
+      ['dragenter', 'dragover'].forEach(name => {
+        dropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(name => {
+        dropzone.addEventListener(name, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('dragover');
+        });
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          uploadPdf(files[0]);
+        }
+      });
+    }
+
+    function handleFileSelect(e) {
+      const files = e.target.files;
+      if (files.length > 0) {
+        uploadPdf(files[0]);
+      }
+    }
+
+    async function uploadPdf(file) {
+      hideAlert();
+
+      // REQ-1.3: Validate file type client-side before sending
+      if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+        showError('Invalid file type: GhostRead only accepts PDF documents (.pdf). (REQ-1.3)');
+        return;
+      }
+
+      // REQ-1.1: Validate file size (max 20 MB)
+      const MAX_SIZE = 20 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        showError(`File size exceeds the 20 MB limit allowed by GhostRead (${(file.size / (1024*1024)).toFixed(1)} MB). (REQ-1.1)`);
+        return;
+      }
+
+      const progressContainer = document.getElementById('upload-progress-container');
+      const progressBar = document.getElementById('upload-progress-bar');
+      const statusText = document.getElementById('upload-status');
+      const dropLabel = document.getElementById('dropzone-label');
+
+      progressContainer.style.display = 'block';
+      statusText.style.display = 'block';
+      progressBar.style.width = '0%';
+      dropLabel.textContent = `Uploading "${file.name}"...`;
+      statusText.textContent = 'Uploading file to server...';
+
+      try {
+        const result = await API.uploadFile('/api/documents/upload', file, (percent) => {
+          progressBar.style.width = percent + '%';
+          if (percent >= 100) {
+            statusText.textContent = 'Extracting sections and analyzing text density... (REQ-1.2, 1.4)';
+          }
+        });
+
+        statusText.textContent = 'Upload complete! Redirecting to reading view...';
+        setTimeout(() => {
+          window.location.href = `/reader.html?doc=${result.document.id}`;
+        }, 600);
+      } catch (err) {
+        progressContainer.style.display = 'none';
+        statusText.style.display = 'none';
+        dropLabel.textContent = 'Drop your course PDF here or click to browse';
+        showError(err.message);
+      }
+    }
+
+    async function deleteDoc(docId, title) {
+      if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
+      try {
+        await API.delete(`/api/documents/${docId}`);
+        await loadDocuments();
+      } catch (err) {
+        showError('Failed to delete document: ' + err.message);
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('page-alert');
+      el.textContent = msg;
+      el.className = 'alert alert-error';
+      el.style.display = 'block';
+    }
+
+    function hideAlert() {
+      document.getElementById('page-alert').style.display = 'none';
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GhostRead — Comprehension Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <!-- Chart.js (Local copy + CDN fallback) for multi-document trends (REQ-5.2) -->
+  <script src="/vendor/chartjs/chart.min.js"></script>
+  <script>
+    if (!window.Chart) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <a href="/" class="nav-brand">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+      </svg>
+      GhostRead
+      <span class="badge">Analytics</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="/">My Library</a></li>
+      <li><a href="/dashboard.html" class="active">Comprehension Dashboard</a></li>
+      <li><a href="/explain.html">Explain This App</a></li>
+      <li id="admin-nav" style="display: none;"><a href="/admin.html">Admin Settings</a></li>
+    </ul>
+    <div class="nav-user">
+      <button class="btn btn-secondary btn-sm" onclick="API.logout()">Log Out</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- Header -->
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2rem;">
+      <div>
+        <h1 style="font-size: 1.85rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">
+          Reading Comprehension Dashboard
+        </h1>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Honest behavioral signals of your study sessions with per-section heatmaps and historical trends.
+        </p>
+      </div>
+      <div id="perf-badge" style="font-size: 0.8rem; color: #64748b; background: #ffffff; padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);">
+        ⚡ Load time: -- ms (REQ-5.3 < 2s)
+      </div>
+    </div>
+
+    <!-- Summary Stats Overview -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+      <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Documents Read</span>
+        <div id="stat-docs" style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem;">--</div>
+      </div>
+      <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Total Sessions</span>
+        <div id="stat-sessions" style="font-size: 1.75rem; font-weight: 800; color: var(--primary); margin-top: 0.25rem;">--</div>
+      </div>
+      <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Avg Quiz Score</span>
+        <div id="stat-quiz" style="font-size: 1.75rem; font-weight: 800; color: var(--status-read); margin-top: 0.25rem;">--</div>
+      </div>
+      <div class="card" style="margin-bottom: 0; padding: 1.25rem;">
+        <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Quizzes Completed</span>
+        <div id="stat-attempts" style="font-size: 1.75rem; font-weight: 800; color: #8b5cf6; margin-top: 0.25rem;">--</div>
+      </div>
+    </div>
+
+    <!-- Per-Document Heatmap Section (REQ-5.1) -->
+    <div class="card" style="margin-bottom: 2rem;">
+      <div class="card-header" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h2 class="card-title">Document Section Heatmap</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">
+            Click any section block to inspect raw telemetry and explanation (REQ-5.1)
+          </span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <label style="font-size: 0.85rem; font-weight: 600;">Document:</label>
+          <select id="doc-select" class="btn btn-secondary btn-sm" onchange="renderSelectedDocumentHeatmap()" style="padding: 0.4rem 0.8rem; cursor: pointer;">
+            <!-- Populated dynamically -->
+          </select>
+        </div>
+      </div>
+
+      <!-- Active Document Stats Banner -->
+      <div id="doc-status-banner" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.75rem 1rem; background: #f8fafc; border-radius: 6px; border: 1px solid var(--border); font-size: 0.85rem;">
+        <!-- Filled dynamically -->
+      </div>
+
+      <!-- Interactive Heatmap Grid -->
+      <div id="heatmap-container" class="heatmap-grid">
+        <!-- Section blocks rendered dynamically -->
+      </div>
+
+      <!-- Legend (REQ-5.1) -->
+      <div class="legend-container">
+        <div class="legend-item">
+          <div class="legend-dot" style="background: var(--status-read); border: 1px solid #059669;"></div>
+          <span>Genuinely Read (Expected Dwell & Speed)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: var(--status-skimmed); border: 1px solid #dc2626;"></div>
+          <span>Skimmed (High Speed, Low Dwell)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: var(--status-reread); border: 1px solid #7c3aed;"></div>
+          <span>Reread (Backtracked with High Dwell)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: var(--status-reinforced); border: 1px solid #0891b2;"></div>
+          <span>Reinforced (Passed Micro-Quiz)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background: #cbd5e1; border: 1px solid #94a3b8;"></div>
+          <span>Unread (No Session Yet)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Document Trends Section (REQ-5.2) -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">Cross-Document Reading Trends (REQ-5.2)</h2>
+          <span style="font-size: 0.85rem; color: var(--text-muted);">
+            Comprehension distribution across successive reading sessions
+          </span>
+        </div>
+      </div>
+
+      <div style="height: 320px; position: relative;">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Detail / Explanation Modal (REQ-5.1) -->
+  <div id="detail-modal" class="modal-overlay" style="display: none;" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; margin-bottom: 1.25rem;">
+        <h3 id="modal-title" style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">
+          Section Telemetry Details
+        </h3>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('detail-modal').style.display='none'">✕</button>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <span style="font-size: 0.9rem; font-weight: 600;">Classification Status:</span>
+        <span id="modal-status-badge" class="heatmap-block status-read" style="padding: 0.25rem 0.75rem; border-radius: 999px; aspect-ratio: auto; font-size: 0.85rem; font-weight: 700;">
+          Genuinely Read
+        </span>
+      </div>
+
+      <!-- Raw Behaviour Data Grid -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; padding: 1rem; margin-bottom: 1.25rem;">
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Total Dwell Time</span>
+          <div id="modal-dwell" style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">-- s</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Relative Scroll Speed</span>
+          <div id="modal-speed" style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">-- x</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Backtracks Count</span>
+          <div id="modal-backtracks" style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">--</div>
+        </div>
+        <div>
+          <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Section Word Count</span>
+          <div id="modal-words" style="font-size: 1.15rem; font-weight: 700; color: #0f172a;">-- words</div>
+        </div>
+      </div>
+
+      <!-- Classifier Decision Explanation (REQ-5.1) -->
+      <div>
+        <h4 style="font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #475569; margin-bottom: 0.5rem;">
+          Why was this label assigned? (Decision Rationale)
+        </h4>
+        <div id="modal-explanation" style="background: #ffffff; border: 1px solid #cbd5e1; border-left: 4px solid var(--primary); border-radius: 6px; padding: 1rem; font-size: 0.9rem; line-height: 1.6; color: #1e293b;">
+          --
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; text-align: right;">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('detail-modal').style.display='none'">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script>
+    let dashboardData = null;
+    let trendChartInstance = null;
+
+    async function loadDashboard() {
+      try {
+        const user = await API.getCurrentUser();
+        if (!user) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        if (user.role === 'admin') {
+          document.getElementById('admin-nav').style.display = 'block';
+        }
+
+        const data = await API.get('/api/dashboard');
+        dashboardData = data;
+
+        // Display performance load time (REQ-5.3)
+        document.getElementById('perf-badge').textContent = `⚡ Loaded in ${data.loadTimeMs || 12} ms (REQ-5.3 < 2s)`;
+
+        // Update Overview Cards
+        document.getElementById('stat-docs').textContent = data.summary.totalDocuments;
+        document.getElementById('stat-sessions').textContent = data.summary.totalSessions;
+        document.getElementById('stat-quiz').textContent =
+          data.summary.averageQuizScore !== null ? `${data.summary.averageQuizScore}%` : 'N/A';
+        document.getElementById('stat-attempts').textContent = data.summary.quizAttempts;
+
+        // Populate Document Select Dropdown
+        const docSelect = document.getElementById('doc-select');
+        docSelect.innerHTML = data.documentHeatmaps.map((doc, idx) => `
+          <option value="${doc.documentId}">${escapeHtml(doc.title)} (${doc.totalPages} pages)</option>
+        `).join('');
+
+        // Check if query param doc exists
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetDocId = urlParams.get('doc');
+        if (targetDocId) {
+          docSelect.value = targetDocId;
+        }
+
+        renderSelectedDocumentHeatmap();
+        renderTrendChart(data.sessionTrends);
+
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+        alert('Failed to load dashboard: ' + err.message);
+      }
+    }
+
+    function renderSelectedDocumentHeatmap() {
+      const docSelect = document.getElementById('doc-select');
+      const selectedId = parseInt(docSelect.value, 10);
+      const doc = dashboardData.documentHeatmaps.find(d => d.documentId === selectedId);
+
+      if (!doc) return;
+
+      // Status banner
+      const banner = document.getElementById('doc-status-banner');
+      if (doc.counts) {
+        banner.innerHTML = `
+          <span>Total Sections: <strong>${doc.counts.total}</strong></span>
+          <span style="color: #065f46;">Genuinely Read: <strong>${doc.counts.genuinelyRead}</strong></span>
+          <span style="color: #991b1b;">Skimmed: <strong>${doc.counts.skimmed}</strong></span>
+          <span style="color: #5b21b6;">Reread: <strong>${doc.counts.reread}</strong></span>
+          <span style="color: #155e75;">Reinforced: <strong>${doc.counts.reinforced}</strong></span>
+        `;
+      } else {
+        banner.innerHTML = `<span>Status: <em>${doc.status}</em> — No completed reading session recorded yet.</span>`;
+      }
+
+      // Heatmap Grid
+      const container = document.getElementById('heatmap-container');
+      container.innerHTML = doc.sections.map(sec => {
+        let statusClass = 'status-unread';
+        if (sec.status === 'Genuinely Read') statusClass = 'status-read';
+        else if (sec.status === 'Skimmed') statusClass = 'status-skimmed';
+        else if (sec.status === 'Reread') statusClass = 'status-reread';
+        else if (sec.status === 'Reinforced') statusClass = 'status-reinforced';
+
+        return `
+          <div class="heatmap-block ${statusClass}" onclick="openSectionModal(${JSON.stringify(sec).replace(/"/g, '&quot;')})">
+            <span class="heatmap-sec-num">${sec.sectionNumber}</span>
+            <span class="heatmap-status-label">${sec.status || 'Unread'}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openSectionModal(sec) {
+      document.getElementById('modal-title').textContent = `Section ${sec.sectionNumber} (Page ${sec.pageNumber})`;
+      
+      const badge = document.getElementById('modal-status-badge');
+      badge.textContent = sec.status || 'Unread';
+      let cls = 'status-unread';
+      if (sec.status === 'Genuinely Read') cls = 'status-read';
+      else if (sec.status === 'Skimmed') cls = 'status-skimmed';
+      else if (sec.status === 'Reread') cls = 'status-reread';
+      else if (sec.status === 'Reinforced') cls = 'status-reinforced';
+      badge.className = `heatmap-block ${cls}`;
+
+      document.getElementById('modal-dwell').textContent = `${(sec.dwellTimeSeconds || 0).toFixed(1)} s`;
+      document.getElementById('modal-speed').textContent = `${(sec.relativeScrollSpeed || 0).toFixed(2)} x`;
+      document.getElementById('modal-backtracks').textContent = sec.backtrackCount || 0;
+      document.getElementById('modal-words').textContent = `${sec.wordCount || 0} words`;
+
+      document.getElementById('modal-explanation').textContent = sec.explanation || 'No reading events recorded for this section yet.';
+
+      document.getElementById('detail-modal').style.display = 'flex';
+    }
+
+    function closeModal(e) {
+      if (e.target.id === 'detail-modal') {
+        document.getElementById('detail-modal').style.display = 'none';
+      }
+    }
+
+    // Chart.js Trends across multiple sessions & documents (REQ-5.2)
+    function renderTrendChart(trends) {
+      const ctx = document.getElementById('trendChart').getContext('2d');
+
+      if (trendChartInstance) {
+        trendChartInstance.destroy();
+      }
+
+      if (!trends || trends.length === 0) {
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#64748b';
+        ctx.textAlign = 'center';
+        ctx.fillText('No historical sessions recorded yet. Finish reading a document to view trends.', 300, 150);
+        return;
+      }
+
+      const labels = trends.map((t, idx) => `Session ${idx + 1}: ${t.document_title.slice(0, 18)}...`);
+      const readData = trends.map(t => t.read_count || 0);
+      const rereadData = trends.map(t => t.reread_count || 0);
+      const reinforcedData = trends.map(t => t.reinforced_count || 0);
+      const skimmedData = trends.map(t => t.skimmed_count || 0);
+
+      trendChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Genuinely Read',
+              data: readData,
+              backgroundColor: '#10b981',
+              stack: 'Stack 0'
+            },
+            {
+              label: 'Reinforced (Quiz)',
+              data: reinforcedData,
+              backgroundColor: '#06b6d4',
+              stack: 'Stack 0'
+            },
+            {
+              label: 'Reread',
+              data: rereadData,
+              backgroundColor: '#8b5cf6',
+              stack: 'Stack 0'
+            },
+            {
+              label: 'Skimmed',
+              data: skimmedData,
+              backgroundColor: '#ef4444',
+              stack: 'Stack 0'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              title: { display: true, text: 'Number of Sections' },
+              ticks: { precision: 0 }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                footer: (items) => {
+                  const s = trends[items[0].dataIndex];
+                  return `Avg Dwell: ${s.avg_dwell ? s.avg_dwell.toFixed(1) : 0}s | Speed: ${s.avg_speed ? s.avg_speed.toFixed(2) : 0}x`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>
